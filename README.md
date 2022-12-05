@@ -36,5 +36,5 @@
 
 - 加锁成功之后，对象的对象头储存的就是锁记录的地址和状态 00 表示轻量级锁![在这里插入图片描述](imgs/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl81MDI4MDU3Ng==,size_16,color_FFFFFF,t_70-16667560647462.png)
 - 如果CAS交换失败，则对应两种情况：
-  - 其他线程已经加锁，存在竞争现象，首先会进行自旋锁，自旋一定次数后，如果还是失败就进入锁膨胀阶段。
-  - 
+  - 其他线程已经加锁，存在竞争现象，进入锁膨胀阶段。
+  - 线程自己本身执行了锁的重入，则添加一条Lock Record作为重入的计数
