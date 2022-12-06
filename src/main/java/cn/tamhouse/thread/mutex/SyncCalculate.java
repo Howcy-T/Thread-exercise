@@ -1,5 +1,7 @@
 package cn.tamhouse.thread.mutex;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author th
  * @Descirbe 同步计算 同时加减操作 最后结果为0

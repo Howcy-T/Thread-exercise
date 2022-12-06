@@ -38,3 +38,22 @@
 - 如果CAS交换失败，则对应两种情况：
   - 其他线程已经加锁，存在竞争现象，进入锁膨胀阶段。
   - 线程自己本身执行了锁的重入，则添加一条Lock Record作为重入的计数
+  
+  
+### wait/notify 
+- **执行原理**
+
+  - 在锁的竞争过程中拿到锁的线程称为owner线程，处于RUNNING状态，未拿到锁的线程处于BLOCKED状态
+
+  - 当owner线程发现此时执行条件并不满足时，便会调用wait()方法使当前owner线程进入waitSet中，此时线程状态变为WAITING**并释放锁**
+
+  - 当条件满足的时候，由owner线程调用notify/notifyAll 来唤醒处于waitSet中的线程
+
+  - wait/notify 只有owner线程可以调用
+  //todo 补图
+
+
+- **sleep和wait的区别**
+  - sleep是Thread的静态方法，wait是Object的实例方法
+  - 只有owner线程才可以调用wait方法，即wait需要和synchronized配合使用，而sleep不需要
+  - sleep不会释放锁，wait会
