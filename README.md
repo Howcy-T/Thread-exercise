@@ -57,3 +57,7 @@
   - sleep是Thread的静态方法，wait是Object的实例方法
   - 只有owner线程才可以调用wait方法，即wait需要和synchronized配合使用，而sleep不需要
   - sleep不会释放锁，wait会
+
+- **sleep和wait共同点**
+  - 线程所处状态一致（WAITING）
+
