@@ -82,4 +82,4 @@
 - **保护性暂停**
   - 当线程访问某个资源时，发现条件不满足则暂时挂起，等到条件满足时再执行
 
-![img](imgs/58d0208fba78484eb2df865d3ceb197b.png#pic_center)
+![img](imgs/58d0208fba78484eb2df865d3ceb197b.png)
