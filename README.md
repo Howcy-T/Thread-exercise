@@ -60,4 +60,26 @@
 
 - **sleep和wait共同点**
   - 线程所处状态一致（WAITING）
+  
+- **解决虚假唤醒**
+  
+  ```
+  synchronized(lock){
+      while(条件不满足){
+          lock.wait();
+      }
+      //条件成立，执行操作;
+      break;
+  }
+  
+  //另外一个线程
+  synchronized(lock){
+      lock.notifyAll();
+  }
+  ```
+  
 
+- **保护性暂停**
+  - 当线程访问某个资源时，发现条件不满足则暂时挂起，等到条件满足时再执行
+
+![img](imgs/58d0208fba78484eb2df865d3ceb197b.png#pic_center)
