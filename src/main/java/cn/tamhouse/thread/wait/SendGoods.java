@@ -21,7 +21,7 @@ public class SendGoods {
     public static void main(String[] args) throws InterruptedException {
         new Thread(() -> {
             synchronized (lock) {
-                if (!isGoodsExist) {
+                while (!isGoodsExist) {
                     log.info("货还没到，直接开摆");
                     try {
                         lock.wait();
@@ -74,7 +74,7 @@ public class SendGoods {
                 log.info("送外卖...");
                 isFoodExist = true;
                 //提醒小明干活了
-                lock.notify();
+                lock.notifyAll();
             }
         }, "外卖员").start();
 
