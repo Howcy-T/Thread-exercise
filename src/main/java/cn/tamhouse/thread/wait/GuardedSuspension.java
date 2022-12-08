@@ -85,7 +85,7 @@ class GuardedObject{
      */
     public synchronized void compact(Object response){
         log.info("给变量赋值");
-        //this.response=response;
+        this.response=response;
         this.notifyAll();
     }
 }
