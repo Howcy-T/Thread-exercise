@@ -15,7 +15,7 @@ public class GuardedSuspension {
         GuardedObject guardedObject=new GuardedObject();
         new Thread(()->{
             try {
-                Integer o = (Integer) guardedObject.get();
+                Integer o = (Integer) guardedObject.get(0);
                 log.info("获取变量:{}",o);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -52,13 +52,31 @@ class GuardedObject{
      * 获取资源
      * @return
      */
-    public synchronized Object get() throws InterruptedException {
+    public synchronized Object get(long timeout) throws InterruptedException {
         //如果不满足条件则挂起
+        long begin=System.currentTimeMillis();
+        long passTime=0;
         while (response==null){
            log.info("变量为空，等待中...");
-           this.wait();
+
+           if (timeout==0){
+               this.wait();
+           }else {
+               long waitTime=timeout-passTime;
+               if (waitTime<=0){
+                   log.info("放弃等待");
+                   break;
+               }
+               this.wait(waitTime);
+               passTime=System.currentTimeMillis()-begin;
+           }
         }
+
         return response;
+    }
+
+    public synchronized Object get() throws InterruptedException {
+        return this.get(0);
     }
 
     /**
@@ -67,7 +85,7 @@ class GuardedObject{
      */
     public synchronized void compact(Object response){
         log.info("给变量赋值");
-        this.response=response;
+        //this.response=response;
         this.notifyAll();
     }
 }
