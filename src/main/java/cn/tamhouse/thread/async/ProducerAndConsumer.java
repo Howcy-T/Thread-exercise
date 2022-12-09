@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author th
@@ -13,7 +14,7 @@ import java.util.Queue;
 @Slf4j
 public class ProducerAndConsumer {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         //创建消息队列
         MessageQueue messageQueue=new MessageQueue();
         for (int i = 0; i < 10; i++) {
@@ -23,14 +24,22 @@ public class ProducerAndConsumer {
                 messageQueue.put(message);
                 log.info("生产消息：{}",message);
             },"生产者【"+i+"】").start();
+            TimeUnit.SECONDS.sleep(1);
         }
 
-        for (int i = 0; i < 10; i++) {
+
             new Thread(() ->{
-                Message message = messageQueue.take();
-                log.info("消费消息：{}",message);
-            },"消费者【"+i+"】").start();
-        }
+                while (true){
+                    try {
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    Message message = messageQueue.take();
+                    log.info("消费消息：{}", message);
+                }
+            },"消费者").start();
+
     }
 }
 
