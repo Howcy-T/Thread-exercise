@@ -121,3 +121,31 @@
     - await执行后会释放锁
     - await线程被唤醒或打断之后重新竞争锁，竞争成功则继续执行
 
+### java内存模型
+
+- **可见性**：
+    - ```java
+      static boolean run=true;
+          public static void main(String[] args) throws InterruptedException {
+              new Thread(() -> {
+      
+                  while (run){
+                      //线程执行
+                  }
+              }).start();
+      
+              TimeUnit.SECONDS.sleep(1);
+      
+              run=false;//线程并不会停止
+              
+          }
+      ```
+
+      问题分析：boolean变量run是存放在主存之中的，由于线程频繁的从主存中访问run，这时候JIT编译器会把run的值缓存到线程自己的工作内存中的高速缓存，提高性能。从而带来的问题就是，当主线程修改了run的值并且同步到主存中的时候，新开的线程还是读的旧值，导致线程并没有如预期一样停止运行，也就是一个线程对主存的修改对其他线程不可见
+
+    - 通过 volatile关键字解决可见性问题，给变量加上volatile关键字表示线程每次都需要从主存中读取最新的值，保证共享变量在多个线程中的可见性。但是性能有所损失。
+    - synchronized也可以保证共享变量在多个线程中的可见性。
+
+- **原子性**
+
+    - volatile 可以保证可见性但是不能保证原子性
