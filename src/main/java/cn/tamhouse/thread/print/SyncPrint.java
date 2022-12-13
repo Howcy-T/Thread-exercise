@@ -15,7 +15,6 @@ public class SyncPrint {
             try {
                 this.wait();
             } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         }
         log.info("1");
