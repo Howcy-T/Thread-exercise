@@ -1,7 +1,11 @@
 package cn.tamhouse.thread.threadpool;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -11,30 +15,111 @@ import java.util.concurrent.locks.ReentrantLock;
  * @Describe
  * @Date 2022/12/28 14:13
  */
+@Slf4j
 public class ThreadPool {
+
+    /**
+     * 阻塞队列
+     */
+    private BlockingQueue<Runnable> taskQueue;
+
+    /**
+     * 线程集合
+     */
+    private Set<Worker> workers = new HashSet<>();
+
+    /**
+     * 核心线程数
+     */
+    private int coreSize;
+
+    /**
+     * 超时时间
+     */
+    private long timeout;
+
+    /**
+     * 时间单位
+     */
+    private TimeUnit unit;
+
+    /**
+     * 阻塞队列大小
+     */
+    private int queueSize;
+
+    public ThreadPool(int coreSize, long timeout, TimeUnit unit, int queueSize) {
+        this.coreSize = coreSize;
+        this.timeout = timeout;
+        this.unit = unit;
+        this.queueSize = queueSize;
+        this.taskQueue = new BlockingQueue<>(queueSize);
+    }
+
+    public void execute(Runnable task) {
+        //判断是否超过最大工作线程数量
+        synchronized (workers) {
+            if (workers.size() < coreSize) {
+                //小于核心线程数，正常工作
+                Worker worker = new Worker(task);
+                workers.add(worker);
+                log.info("worker:{}加入线程池",worker);
+                worker.start();
+            } else {
+                //大于核心线程数，加入阻塞队列
+                log.info("task:{}加入阻塞队列",task);
+                taskQueue.put(task);
+            }
+        }
+    }
+
+    class Worker extends Thread {
+        private Runnable task;
+
+        public Worker(Runnable task) {
+            this.task = task;
+        }
+
+        @Override
+        public void run() {
+            while (task != null||(task=taskQueue.poll(timeout,unit))!=null) {
+                try {
+                    task.run();
+                    log.info("worker:{}执行任务task:{}",this,task);
+                }finally {
+                    task=null;
+                }
+            }
+            synchronized (workers){
+                workers.remove(this);
+            }
+        }
+    }
+
 }
 
-class BlockingQueue<T>{
+@Slf4j
+class BlockingQueue<T> {
 
     /**
      * 队列实现
      */
-    private Deque<T> queue =new ArrayDeque<>();
+    private Deque<T> queue = new ArrayDeque<>();
 
     /**
      * 锁
      */
-    private ReentrantLock lock=new ReentrantLock();
+    private ReentrantLock lock = new ReentrantLock();
 
     /**
      * 生产者条件变量
      */
-    private Condition fullWaitSet=lock.newCondition();
+    private Condition fullWaitSet = lock.newCondition();
 
     /**
      * 消费者条件变量
      */
-    private Condition emptyWaitSet=lock.newCondition();
+    private Condition emptyWaitSet = lock.newCondition();
 
     /**
      * 队列容量
@@ -46,26 +131,27 @@ class BlockingQueue<T>{
     }
 
     public BlockingQueue(int capacity) {
-        if (capacity<=0){
-            capacity=1;
+        if (capacity <= 0) {
+            capacity = 1;
         }
         this.capacity = capacity;
     }
 
     /**
      * 限时获取
+     *
      * @param timeout
      * @param unit
      * @return
      */
-    public T poll(long timeout, TimeUnit unit){
+    public T poll(long timeout, TimeUnit unit) {
         //超时时间单位统一转换纳秒
         long nanos = unit.toNanos(timeout);
         lock.lock();
         try {
             //如果队列为空，则等待
-            while (queue.isEmpty()){
-                if (nanos<=0){
+            while (queue.isEmpty()) {
+                if (nanos <= 0) {
                     //时间到了，没获取到直接返回空值
                     return null;
                 }
@@ -80,22 +166,23 @@ class BlockingQueue<T>{
             //唤醒生产者
             fullWaitSet.signal();
             return t;
-        }
-         finally {
+        } finally {
             lock.unlock();
         }
     }
 
     /**
      * 阻塞获取
+     *
      * @return
      */
-    public T take(){
+    public T take() {
         lock.lock();
         try {
             //如果队列为空，则等待
-            while (queue.isEmpty()){
+            while (queue.isEmpty()) {
                 try {
+                    log.info("等待任务添加到延迟队列。。。");
                     emptyWaitSet.await();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -105,7 +192,7 @@ class BlockingQueue<T>{
             //唤醒生产者
             fullWaitSet.signal();
             return t;
-        }  finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -113,11 +200,12 @@ class BlockingQueue<T>{
     /**
      * 阻塞投入
      */
-    public void put(T t){
+    public void put(T t) {
         lock.lock();
-        try{
+        try {
             //当队列长度等于容量上线时，生产者阻塞
-            while (queue.size()==capacity){
+            while (queue.size() == capacity) {
+                log.info("任务等待加入阻塞队列。。。");
                 fullWaitSet.await();
             }
             queue.addLast(t);
@@ -130,11 +218,11 @@ class BlockingQueue<T>{
         }
     }
 
-    public int size(){
+    public int size() {
         lock.lock();
         try {
             return queue.size();
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
