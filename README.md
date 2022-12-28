@@ -149,3 +149,49 @@
 - **原子性**
 
     - volatile 可以保证可见性但是不能保证原子性
+
+
+
+
+
+### volatile原理
+
+- **volatile如何保证可见性**
+  - volatile通过读屏障和写屏障来保证可见性
+  - 读屏障：线程对共享变量的读取总是从主存中获取，从而保证读取到最新值
+  - 写屏障：线程对共享变量的修改总是会同步到主存中
+- **volatile如何保证有序性**
+  - volatile禁止指令重排，即在一个线程内所执行的指令顺序不会发生改变，但是无法保证指令交错（原子性）
+
+- **dcl双检锁**
+
+  ```java
+  public class Singleton{
+    //私有构造
+    private Singleton(){};
+    
+    private static volatile Singleton instance;
+    
+    public static Singleton getInstance(){
+      if(instance==null){
+        synchronized（Singleton.class）{
+          if(instance==null){
+            //可能发生指令重排
+            instance=new Singleton();
+          }
+        }
+      }
+      return instance;
+    }
+  }
+  ```
+
+  - dcl不加volatile会有什么问题？
+    - instance=new Singleton() 这行代码可能会发生指令重排
+    - ![img](./imgs/1620.png)
+    - ![image-20221213160821862](/Users/tanhao/work/xdclass-shop/img/image-20221213160821862.png)
+
+- **Volatile的有序性和synchronized有什么不同？**
+  - volatile修饰变量，涉及到对变量的读写操作时不会发生指令重排
+  - synchronized保证代码块中和代码块外不会发生指令交错，但无法保证代码块内不会发生指令重排，如果对变量的所有操作都处于同步代码块中则不会产生任何问题
+  - 
