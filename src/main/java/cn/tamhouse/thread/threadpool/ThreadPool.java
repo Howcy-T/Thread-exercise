@@ -70,16 +70,18 @@ class BlockingQueue<T>{
                     return null;
                 }
                 //返回剩余等待时间
-                nanos = emptyWaitSet.awaitNanos(nanos);
+                try {
+                    nanos = emptyWaitSet.awaitNanos(nanos);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
             T t = queue.removeFirst();
             //唤醒生产者
             fullWaitSet.signal();
             return t;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return null;
-        } finally {
+        }
+         finally {
             lock.unlock();
         }
     }
@@ -93,16 +95,17 @@ class BlockingQueue<T>{
         try {
             //如果队列为空，则等待
             while (queue.isEmpty()){
-                emptyWaitSet.await();
+                try {
+                    emptyWaitSet.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             T t = queue.removeFirst();
             //唤醒生产者
             fullWaitSet.signal();
             return t;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return null;
-        } finally {
+        }  finally {
             lock.unlock();
         }
     }
