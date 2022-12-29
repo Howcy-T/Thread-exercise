@@ -12,7 +12,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Tamhouse
- * @Describe
+ * @Describe 自定义线程池：角色 workers：线程集合
+ *                          BlockingQueue:阻塞队列  ---》角色：Dequeue 实现队列 ；capacity 队列最大容量 ；锁，生产者消费者条件变量
+ *                          coreSize：核心线程数
+ *                          queueSize：阻塞队列长度
+ *                          RejectPolicy：拒绝策略
+ *                          timeout：超时时间
+ *                          timeunit：超时时间时间单位
  * @Date 2022/12/28 14:13
  */
 @Slf4j

@@ -160,6 +160,7 @@
   - volatile通过读屏障和写屏障来保证可见性
   - 读屏障：线程对共享变量的读取总是从主存中获取，从而保证读取到最新值
   - 写屏障：线程对共享变量的修改总是会同步到主存中
+  
 - **volatile如何保证有序性**
   - volatile禁止指令重排，即在一个线程内所执行的指令顺序不会发生改变，但是无法保证指令交错（原子性）
 
@@ -194,4 +195,74 @@
 - **Volatile的有序性和synchronized有什么不同？**
   - volatile修饰变量，涉及到对变量的读写操作时不会发生指令重排
   - synchronized保证代码块中和代码块外不会发生指令交错，但无法保证代码块内不会发生指令重排，如果对变量的所有操作都处于同步代码块中则不会产生任何问题
-  - 
+
+
+
+### 线程池
+
+- **ThreadPoolExecutor**
+
+  - 构造方法  	
+
+    ```java
+    /**
+         * Creates a new {@code ThreadPoolExecutor} with the given initial
+         * parameters.
+         *
+         * @param corePoolSize the number of threads to keep in the pool, even
+         *        if they are idle, unless {@code allowCoreThreadTimeOut} is set
+         * @param maximumPoolSize the maximum number of threads to allow in the
+         *        pool
+         * @param keepAliveTime when the number of threads is greater than
+         *        the core, this is the maximum time that excess idle threads
+         *        will wait for new tasks before terminating.
+         * @param unit the time unit for the {@code keepAliveTime} argument
+         * @param workQueue the queue to use for holding tasks before they are
+         *        executed.  This queue will hold only the {@code Runnable}
+         *        tasks submitted by the {@code execute} method.
+         * @param threadFactory the factory to use when the executor
+         *        creates a new thread
+         * @param handler the handler to use when execution is blocked
+         *        because the thread bounds and queue capacities are reached
+         * @throws IllegalArgumentException if one of the following holds:<br>
+         *         {@code corePoolSize < 0}<br>
+         *         {@code keepAliveTime < 0}<br>
+         *         {@code maximumPoolSize <= 0}<br>
+         *         {@code maximumPoolSize < corePoolSize}
+         * @throws NullPointerException if {@code workQueue}
+         *         or {@code threadFactory} or {@code handler} is null
+         */
+        public ThreadPoolExecutor(int corePoolSize,
+                                  int maximumPoolSize,
+                                  long keepAliveTime,
+                                  TimeUnit unit,
+                                  BlockingQueue<Runnable> workQueue,
+                                  ThreadFactory threadFactory,
+                                  RejectedExecutionHandler handler) {
+            if (corePoolSize < 0 ||
+                maximumPoolSize <= 0 ||
+                maximumPoolSize < corePoolSize ||
+                keepAliveTime < 0)
+                throw new IllegalArgumentException();
+            if (workQueue == null || threadFactory == null || handler == null)
+                throw new NullPointerException();
+            this.corePoolSize = corePoolSize;
+            this.maximumPoolSize = maximumPoolSize;
+            this.workQueue = workQueue;
+            this.keepAliveTime = unit.toNanos(keepAliveTime);
+            this.threadFactory = threadFactory;
+            this.handler = handler;
+        }
+    ```
+
+    - corePoolSize:核心线程数
+    - maximumPoolSize:最大线程数
+      - 急救线程即除核心线程以外的空闲线程，当核心线程全部投入工作，并且阻塞队列已满的时候，新来的任务会交给急救线程执行
+      - 急救线程并不会一直存在，当其等待任务的时间超过keepAliveTime的时候就会被回收；
+      - 急救线程数=最大线程数-核心线程数
+    - keepAliveTime:存活时间（空闲线程等待任务的最大时间）---》针对急救线程
+    - Unit:时间单位
+    - workQueue：阻塞队列，当核心线程全部在运行时，新的任务会被投放到阻塞队列中
+    - threadFactory:线程工厂，用于创建新的线程池
+    - handler：拒绝策略，默认当阻塞队列满的时候抛出异常
+
