@@ -266,3 +266,67 @@
     - threadFactory:线程工厂，用于创建新的线程池
     - handler：拒绝策略，默认当阻塞队列满的时候抛出异常
 
+- **newFixedThreadPool**
+
+  - 是一个固定长度的线程池，其构造方法：
+
+  ```java
+  public static ExecutorService newFixedThreadPool(int nThreads, ThreadFactory threadFactory) {
+          return new ThreadPoolExecutor(nThreads, nThreads,
+                                        0L, TimeUnit.MILLISECONDS,
+                                        new LinkedBlockingQueue<Runnable>(),
+                                        threadFactory);
+      }
+  ```
+
+  实际上是创建了一个ThreadPoolExecutor对象，其中：
+
+  1. 核心线程数和最大线程数相同，即没有救急线程，因此超时时间也设置为0。
+  2. 阻塞队列是用的LinkedBlockingQueue<Runnable>() 的无参构造，即阻塞队列的长度为Integer的最大值。（4亿多）
+  3. 其采用的拒绝策略为默认的拒绝策略（正常情况下队列不会满才对）
+
+- **newCachedThreadPool**
+
+  - 是一个带缓存的线程池，其构造方法：
+
+  ```java
+  public static ExecutorService newCachedThreadPool(ThreadFactory threadFactory) {
+          return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                        60L, TimeUnit.SECONDS,
+                                        new SynchronousQueue<Runnable>(),
+                                        threadFactory);
+      }
+  ```
+
+  其中：
+
+  1. 核心线程数为0，最大线程数为Integer最大值，即只有救急线程没有核心线程
+  2. 救急线程等待任务执行的时间为60秒
+  3. 阻塞队列的实现方式为 SynchronousQueue，即不存放任何任务的队列，每次获取任务的时候都必须等另一线程删除完，反之亦然
+  4. 拒绝策略为默认（基本用不上）
+
+- **newSingleThreadPool**
+
+  - 是一个只有单线程执行的线程池，其构造方法：
+
+  ```
+  public static ExecutorService newSingleThreadExecutor(ThreadFactory threadFactory) {
+          return new FinalizableDelegatedExecutorService
+              (new ThreadPoolExecutor(1, 1,
+                                      0L, TimeUnit.MILLISECONDS,
+                                      new LinkedBlockingQueue<Runnable>(),
+                                      threadFactory));
+      }
+  ```
+
+  其中：
+
+  1. 核心线程数为1，最大线程数为1，即只有一直工作的单线程
+  2. 救急线程等待任务执行的时间为0秒，没有救急线程
+  3. 阻塞队列的实现方式为 LinkedBlockingQueue，即阻塞队列长度为Integer.MAX_VALUE
+  4. 拒绝策略为默认（基本用不上）
+  5. 与newFixedThreadPool（1）不同的是，newSingleThreadPool使用了装饰器模式，不直接返回ThreadPoolExecutor对象，而是返回FinalizableDelegatedExecutorService，即该线程池无法通过ThreadPoolExecutor中的setCoreSize()来修改核心线程数，从而保证整个线程池中只有一个线程存在
+
+  
+
+  
