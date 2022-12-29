@@ -48,12 +48,15 @@ public class ThreadPool {
      */
     private int queueSize;
 
-    public ThreadPool(int coreSize, long timeout, TimeUnit unit, int queueSize) {
+    private RejectStrategy<Runnable> rejectStrategy;
+
+    public ThreadPool(int coreSize, long timeout, TimeUnit unit, int queueSize,RejectStrategy<Runnable> rejectStrategy) {
         this.coreSize = coreSize;
         this.timeout = timeout;
         this.unit = unit;
         this.queueSize = queueSize;
         this.taskQueue = new BlockingQueue<>(queueSize);
+        this.rejectStrategy=rejectStrategy;
     }
 
     public void execute(Runnable task) {
@@ -66,12 +69,17 @@ public class ThreadPool {
                 log.info("worker:{}加入线程池",worker);
                 worker.start();
             } else {
-                //大于核心线程数，加入阻塞队列
-                log.info("task:{}加入阻塞队列",task);
-                taskQueue.put(task);
+                //大于核心线程数，尝试加入阻塞队列
+//                log.info("task:{}加入阻塞队列",task);
+//                taskQueue.offer(task,timeout,unit);
+                taskQueue.tryPut(rejectStrategy,task);
             }
         }
     }
+
+
+
+
 
     class Worker extends Thread {
         private Runnable task;
@@ -218,11 +226,64 @@ class BlockingQueue<T> {
         }
     }
 
+    /**
+     * 带超时时间的投放阻塞队列
+     * @param t
+     * @param timeout
+     * @param unit
+     * @return 是否入队成功
+     */
+    public boolean offer(T t,long timeout,TimeUnit unit){
+        lock.lock();
+        try {
+            long nanos = unit.toNanos(timeout);
+            //当队列长度等于容量上线时，生产者阻塞
+            while (queue.size() == capacity) {
+                if (nanos<=0){
+                    log.info("入队超时。。。");
+                    return false;
+                }
+                log.info("任务等待加入阻塞队列。。。");
+                try {
+                    nanos = fullWaitSet.awaitNanos(nanos);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            queue.addLast(t);
+            //唤醒消费者
+            emptyWaitSet.signal();
+            return true;
+        }  finally {
+            lock.unlock();
+        }
+    }
+
     public int size() {
         lock.lock();
         try {
             return queue.size();
         } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * 尝试把任务加入阻塞队列，执行相应拒绝策略
+     * @param rejectStrategy
+     * @param task
+     */
+    public void tryPut(RejectStrategy<T> rejectStrategy, T task) {
+        lock.lock();
+        try {
+            //判断队列是否已满
+            if (queue.size() == capacity) {
+                rejectStrategy.reject(this,task);
+            }else {
+                queue.addLast(task);
+                emptyWaitSet.signal();
+            }
+        }finally {
             lock.unlock();
         }
     }
