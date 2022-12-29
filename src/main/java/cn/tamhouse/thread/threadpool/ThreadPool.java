@@ -99,6 +99,7 @@ public class ThreadPool {
                 }
             }
             synchronized (workers){
+                log.info("无任务，worker:{}销毁",this);
                 workers.remove(this);
             }
         }
@@ -240,7 +241,7 @@ class BlockingQueue<T> {
             //当队列长度等于容量上线时，生产者阻塞
             while (queue.size() == capacity) {
                 if (nanos<=0){
-                    log.info("入队超时。。。");
+                    log.info("入队超时。。。放弃等待");
                     return false;
                 }
                 log.info("任务等待加入阻塞队列。。。");
